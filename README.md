@@ -14,7 +14,8 @@ Servicio que combina precios, sentimiento de noticias e IA opcional para generar
 - Consultar sentimiento agregado desde MS3.
 - Generar una senal: `Compra`, `Venta`, `Mantener` o `Sin datos suficientes`.
 - Responder consultas de chat financiero usando contexto y datos recientes.
-- Usar OpenRouter si hay API key, o fallback matematico si no esta configurada.
+- **FinBot (chat):** Groq si `GROQ_API_KEY` esta definida; si no, OpenRouter con `OPENROUTER_API_KEY`.
+- **Señales IA:** OpenRouter; si no hay key, fallback por reglas.
 
 ## Requisitos
 
@@ -22,7 +23,7 @@ Servicio que combina precios, sentimiento de noticias e IA opcional para generar
 - pip
 - MS2 Historial de Precios disponible
 - MS3 Feed de Noticias disponible
-- API key de OpenRouter (opcional)
+- API key de Groq para FinBot (opcional) y/o OpenRouter para Señales IA (opcional)
 
 ## Instalacion
 
@@ -38,10 +39,14 @@ cp .env.example .env
 ```env
 MS2_URL=http://localhost:5002
 MS3_URL=http://localhost:5003
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=your_groq_model
 OPENROUTER_API_KEY=your_openrouter_api_key
 ```
 
-Si `OPENROUTER_API_KEY` no esta configurada, el servicio usa un fallback basado en reglas.
+- Sin `GROQ_API_KEY`, el chat usa OpenRouter si hay `OPENROUTER_API_KEY`.
+- Sin ninguna key de chat, FinBot responde con un mensaje de no configurado.
+- Sin `OPENROUTER_API_KEY`, Señales IA usa solo el fallback basado en reglas.
 
 ## Ejecutar en desarrollo
 

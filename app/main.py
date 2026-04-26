@@ -16,11 +16,23 @@ ms2_url = os.getenv('MS2_URL', 'http://localhost:5002')
 ms3_url = os.getenv('MS3_URL', 'http://localhost:5003')
 
 openrouter_api_key = os.getenv('OPENROUTER_API_KEY')
+groq_api_key = os.getenv('GROQ_API_KEY', '').strip()
+groq_model = os.getenv('GROQ_MODEL').strip()
+
+# OpenRouter → Señales IA (`generar_recomendacion`)
 ai_client = None
 if openrouter_api_key and openrouter_api_key != 'your_openrouter_api_key':
     ai_client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=openrouter_api_key,
+    )
+
+# Groq → FinBot (`/api/chat`), API compatible con OpenAI
+groq_client = None
+if groq_api_key:
+    groq_client = OpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=groq_api_key,
     )
 
 def analizar_sentimiento(simbolo):
@@ -176,9 +188,15 @@ def api_chat():
     mensajes = data.get('messages', [])
     contexto = data.get('contexto', {})
     
-    if not ai_client:
-        return jsonify({"mensaje": "La Inteligencia Artificial no está configurada (Falta OPENROUTER_API_KEY en MS4). No puedo responder preguntas."}), 200
-        
+    chat_client = groq_client or ai_client
+    if not chat_client:
+        return jsonify({
+            "mensaje": (
+                "La Inteligencia Artificial no está configurada en MS4. "
+                "Configura GROQ_API_KEY (FinBot) u OPENROUTER_API_KEY (alternativa de chat)."
+            ),
+        }), 200
+
     try:
         ultimo_mensaje = mensajes[-1]['text'] if mensajes and mensajes[-1]['role'] == 'user' else ''
         
@@ -236,10 +254,16 @@ Usuario pregunta:
 
 Responde directamente a la pregunta del usuario usando formato Markdown. No envíes JSON, solo texto Markdown bien formateado, corto y muy útil. Si te preguntan por recomendaciones o análisis, usa el contexto proporcionado.
 """
-        response = ai_client.chat.completions.create(
-            model="openrouter/free",
-            messages=[{"role": "user", "content": prompt}],
-        )
+        if groq_client:
+            response = groq_client.chat.completions.create(
+                model=groq_model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        else:
+            response = ai_client.chat.completions.create(
+                model="openrouter/free",
+                messages=[{"role": "user", "content": prompt}],
+            )
         return jsonify({"mensaje": response.choices[0].message.content.strip()})
         
     except Exception as e:
