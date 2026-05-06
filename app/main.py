@@ -48,7 +48,7 @@ def analizar_sentimiento(simbolo):
 def obtener_precios(simbolo):
     try:
         fin = datetime.now()
-        inicio = fin - timedelta(days=15)
+        inicio = (fin - timedelta(days=30)).replace(hour=0, minute=0, second=0, microsecond=0)
         fin_str = fin.strftime("%Y-%m-%dT%H:%M:%S")
         inicio_str = inicio.strftime("%Y-%m-%dT%H:%M:%S")
         
