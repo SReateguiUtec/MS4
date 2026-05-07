@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from openai import OpenAI
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flasgger import Swagger
 import requests
 import os
 from dotenv import load_dotenv
@@ -11,6 +12,21 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+swagger_config = {
+    "headers": [],
+    "specs": [
+        {
+            "endpoint": 'apispec_1',
+            "route": '/apispec_1.json',
+            "rule_filter": lambda rule: True,
+            "model_filter": lambda tag: True,
+        }
+    ],
+    "static_url_path": "/flasgger_static",
+    "swagger_ui": True,
+    "specs_route": "/swagger-ui/m4"
+}
+swagger = Swagger(app, config=swagger_config)
 
 ms2_url = os.getenv('MS2_URL', 'http://localhost:5002')
 ms3_url = os.getenv('MS3_URL', 'http://localhost:5003')
@@ -167,6 +183,21 @@ No devuelvas Markdown (como ```json), solo el JSON puro.
 
 @app.route('/api/senales/<simbolo>', methods=['GET'])
 def get_senal(simbolo):
+    """
+    Obtener recomendación de inversión para un símbolo
+    ---
+    tags:
+      - Señales
+    parameters:
+      - name: simbolo
+        in: path
+        type: string
+        required: true
+        description: Símbolo bursátil (ej. AAPL, NVDA)
+    responses:
+      200:
+        description: Recomendación generada exitosamente
+    """
     sentimiento_data = analizar_sentimiento(simbolo)
     precios = obtener_precios(simbolo)
     
@@ -181,6 +212,30 @@ def get_senal(simbolo):
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
+    """
+    Chatbot financiero (FinBot)
+    ---
+    tags:
+      - Chat
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+            contexto:
+              type: object
+    responses:
+      200:
+        description: Respuesta del chatbot
+      400:
+        description: Petición inválida
+    """
     data = request.get_json()
     if not data:
         return jsonify({"mensaje": "No se recibieron datos"}), 400
@@ -277,6 +332,15 @@ Responde directamente a la pregunta del usuario usando formato Markdown. No env�
 
 @app.route('/health', methods=['GET'])
 def health():
+    """
+    Estado de salud del servicio
+    ---
+    tags:
+      - Sistema
+    responses:
+      200:
+        description: OK
+    """
     return jsonify({'status': 'ok'})
 
 
